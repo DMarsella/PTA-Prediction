@@ -9,6 +9,7 @@ from decimal import Decimal
 from memory_profiler import profile
 
 import jax, scipy
+import random
 
 import psutil, os
 from pympler.tracker import SummaryTracker
@@ -16,7 +17,7 @@ from pympler.tracker import SummaryTracker
 from fastfp.fastfp import Fp_jax
 from fastfp.utils import initialize_pta, get_mats
 
-@profile
+#@profile
 def FPCalc(psrs, noise, freqs):
 
 	#initialize memory tracking
@@ -74,12 +75,12 @@ def FPCalc(psrs, noise, freqs):
 
 	return fps
     
-@profile
+#@profile
 def FAPCalc(N, fp0):
 	n = np.arange(0, N)
 	return (np.sum(np.exp(n*np.log(fp0)-fp0-np.log(scipy.special.gamma(n+1)))))
 
-@profile
+#@profile
 def FAP(primpuls, CW, noise):
 	#initialize memory tracking
 	#fap_process = psutil.Process(os.getpid())
@@ -109,7 +110,7 @@ def FAP(primpuls, CW, noise):
 
 	return psrs, fp, fap
 
-@profile
+#@profile
 def SaveResults(CW, ras, dec, fp, fap, pnum, save):
 	fgw = (10**(CW[3]+9))
 	#filename = f'R{rascension}_D{declination}_h{Decimal(CW[4]):.4}_f{Decimal(fgw):.4}_p{pnum}'
@@ -179,14 +180,22 @@ if __name__ == '__main__':
 	memory_base = process.memory_info().rss
 	"""
 
-	tempfparray = np.zeros(avgfactor)
-	tempfaparray = np.zeros(avgfactor)
+	random.seed()
+	fparray = np.zeros(avgfactor)
+	faparray = np.zeros(avgfactor)
 	#Check hmin and hmax before entering the loop.
 	for i in range(avgfactor):
+		phase0 = 2*np.pi*random.random()
 		CW = [cos_i, cos_theta, Mc, fglog10, hmin, phase0, phi, psi]
-		_, fpminarray, fapminarray = FAP(primpuls, CW, noise)
-	fpmin = np.average(fpminarray)
-	fapmin = np.average(fapminarray)
+		_, fptemp, faptemp = FAP(primpuls, CW, noise)
+		print(f'fptemp is {fptemp}')
+		print(f'faptemp is {faptemp}')
+		fparray[i] = fptemp[0]
+		faparray[i] = faptemp
+	fpmin = np.average(fparray)
+	fapmin = np.average(faparray)
+	print(fparray)
+	print(faparray)
 	SaveResults(CW, rascension, declination, fpmin, fapmin, pnum, save)
 	print(f'fpmin is type {type(fpmin)} and {fpmin}')
 	print(f'fapmin is type {type(fpmin)} and {fapmin}')
@@ -207,10 +216,17 @@ if __name__ == '__main__':
     
 	else:
 		print('hmin was outside of bounds, checking hmax')
-		CW[4] = hmax
-		_, fpmaxarray, fapmaxarray = FAP(primpuls, CW, noise)
-		fpmax = np.average(fpmaxarray)
-		fapmax = np.average(fapmaxarray)
+		for i in range(avgfactor):
+			phase0 = 2*np.pi*random.random()
+			CW[4] = hmax
+			CW[5] = phase0
+			_, fptemp, faptemp = FAP(primpuls, CW, noise)
+			print(f'fptemp is {fptemp}')
+			print(f'faptemp is {faptemp}')
+			fparray[i] = fptemp[0]
+			faparray[i] = faptemp
+		fpmax = np.average(fparray)
+		fapmax = np.average(faparray)
 		SaveResults(CW, rascension, declination, fpmax, fapmax, pnum, save)
 		print(fpmax)
 		print(fapmax)
@@ -230,21 +246,40 @@ if __name__ == '__main__':
 			print('hmin and hmax range is ok')
 			count = 0
 			hmid = (hmin+hmax)/2
-			CW[4] = hmid
-			_, fpmidarray, fapmidarray = FAP(primpuls, CW, noise)
-			fpmid = np.average(fpmidarray)
-			fapmid = np.average(fapmidarray)
+			for i in range(avgfactor):
+				phase0 = 2*np.pi*random.random()
+				CW[4] = hmid
+				CW[5] = phase0
+				_, fptemp, faptemp = FAP(primpuls, CW, noise)
+				print(f'fptemp is {fptemp}')
+				print(f'faptemp is {faptemp}')
+				fparray[i] = fptemp[0]
+				faparray[i] = faptemp
+			fpmid = np.average(fparray)
+			fapmid = np.average(faparray)
 			SaveResults(CW, rascension, declination, fpmid, fapmid, pnum, save)
 			print(fpmid)
 			print(fapmid)
+	
+			if (fapmid - threshold) > accuracy:
+				hmin = hmid
+			elif (threshold - fapmid) > accuracy:
+				hmax = hmid
             
 			while ((fapmid - threshold) > accuracy) or ((threshold - fapmid) > accuracy):               
 				count += 1
 				hmid = (hmin+hmax)/2
-				CW[4] = hmid
-				_, fpmidarray, fapmidarray = FAP(primpuls, CW, noise)
-				fpmid = np.average(fpmidarray)
-				fapmid = np.average(fapmidarray)
+				for i in range(avgfactor):
+					phase0 = 2*np.pi*random.random()
+					CW[4] = hmid
+					CW[5] = phase0
+					_, fptemp, faptemp = FAP(primpuls, CW, noise)
+					print(f'fptemp is {fptemp}')
+					print(f'faptemp is {faptemp}')
+					fparray[i] = fptemp[0]
+					faparray[i] = faptemp
+				fpmid = np.average(fparray)
+				fapmid = np.average(faparray)
 				SaveResults(CW, rascension, declination, fpmid, fapmid, pnum, save)
 				print(f'Count: {count}')
 				print(fpmid)

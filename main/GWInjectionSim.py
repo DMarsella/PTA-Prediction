@@ -27,7 +27,7 @@ import json
 from pathlib import Path
 import utility
 
-@profile
+#@profile
 def simulate(pta, params, sparse_cholesky=True):
     """Simulate code with enterprise (instead of libstempo/PINT)"""
     delays, ndiags, fmats, phis = (pta.get_delay(params=params),
@@ -77,16 +77,16 @@ def simulate(pta, params, sparse_cholesky=True):
 
     return [np.array(g + w) for g, w in zip(gpresiduals, whiteresiduals)]
 
-@profile
+#@profile
 def set_residuals(psr, y):
     psr._residuals[psr._isort] = y
 
-@profile
+#@profile
 @function
 def tm_prior(weights, toas, variance=1e-14):
     return weights * variance * len(toas)
 
-@profile
+#@profile
 def TimingModel(coefficients=False, name="linear_timing_model",
                 use_svd=False, normed=True, prior_variance=1e-14):
     """Class factory for marginalized linear timing model signals."""
@@ -103,7 +103,7 @@ def TimingModel(coefficients=False, name="linear_timing_model",
 
     return TimingModel
 
-@profile
+#@profile
 def cw_block_circ(amp_prior='log-uniform', dist_prior=None,
                   skyloc=None, log10_fgw=None,
                   psrTerm=False, tref=57387*86400, name='cw'):
@@ -194,7 +194,7 @@ def cw_block_circ(amp_prior='log-uniform', dist_prior=None,
 
     return cw
 
-@profile
+#@profile
 def generate(psrs, rn_dict, CW):
     Tspan = model_utils.get_tspan(psrs)
     s = TimingModel(use_svd=True)

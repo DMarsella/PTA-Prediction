@@ -1,2 +1,3 @@
 #Ignore Data Folders
 Data/
+__pycache__
