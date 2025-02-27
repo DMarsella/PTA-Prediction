@@ -1,3 +1,8 @@
 #Ignore Data Folders
 Data/
 __pycache__
+
+#Ignore specific files
+*-checkpoint.py
+*-checkpoint.ipynb
+#TestFile.*
