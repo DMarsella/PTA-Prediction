@@ -3,7 +3,7 @@
 from enterprise.signals import signal_base
 import glob
 from decimal import Decimal
-from memory_profiler import profile
+#from memory_profiler import profile
 
 from enterprise_extensions.deterministic import cw_delay, CWSignal
 import numpy as np
