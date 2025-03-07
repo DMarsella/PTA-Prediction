@@ -12,6 +12,7 @@ import datetime
 import jax, scipy
 import random
 
+import enterprise
 import psutil, os
 from pympler.tracker import SummaryTracker
 
@@ -112,13 +113,13 @@ def FAP(primpuls, CW, noise):
 	return psrs, fp, fap
 
 #@profile
-def SaveResults(CW, ras, dec, fp, fap, pnum, save):
+def SaveResults(CW, ras, dec, fp, fap, pnum, save, timestamp):
 	fgw = (10**(CW[3]+9))
 	#filename = f'R{rascension}_D{declination}_h{Decimal(CW[4]):.4}_f{Decimal(fgw):.4}_p{pnum}'
 	#with open(save + filename + '.pkl', 'wb') as f:
 	#	pickle.dump(psrs, f)
 
-	with open(save + 'FAP_Data.txt', 'a') as g:
+	with open(save + timestamp + 'FAP_Data.txt', 'a') as g:
 		parameters = [ras, dec, CW, fp, fap, pnum]
 		g.write(str(parameters)+'\n')
         
@@ -157,6 +158,7 @@ if __name__ == '__main__':
 		noise = json.load(f)
 	avgfactor = args.avgfactor
 	ptafile = args.ptafile
+	timestamp = str(datetime.datetime.now().timestamp()).split('.')[0]
 
 	#Continuous Wave Parameters
 	cos_i = np.cos(args.inclination)
@@ -173,11 +175,16 @@ if __name__ == '__main__':
 	phi = rascension/24*360
 
 	#Populate list of pulsars
-	if ptafile == 'RAW':
-		primpuls = utility.DailyAvgPop(data)
+	if ptafile == None:
+		temp = utility.DailyAvgPop(data)
 
-		with open(save + str(datetime.datetime.now().timestamp()).split('.')[0]+'Pulsars.pkl', mode='xb') as pkl:
+		primpuls = []
+		for psr in temp:
+			primpuls.append(enterprise.pulsar.Pulsar(psr.toas, psr.model))
+
+		with open(save + timestamp +'Pulsars.pkl', mode='xb') as pkl:
 			pickle.dump(primpuls, pkl)
+            
 	else:
 		with open(ptafile, mode='rb') as pkl:
 			primpuls = pickle.load(pkl)
@@ -206,7 +213,7 @@ if __name__ == '__main__':
 	fapmin = np.average(faparray)
 	print(fparray)
 	print(faparray)
-	SaveResults(CW, rascension, declination, fpmin, fapmin, pnum, save)
+	SaveResults(CW, rascension, declination, fpmin, fapmin, pnum, save, timestamp)
 	print(f'fpmin is type {type(fpmin)} and {fpmin}')
 	print(f'fapmin is type {type(fpmin)} and {fapmin}')
 	#print(f'psrs is {type(psrs)}')
@@ -237,7 +244,7 @@ if __name__ == '__main__':
 			faparray[i] = faptemp
 		fpmax = np.average(fparray)
 		fapmax = np.average(faparray)
-		SaveResults(CW, rascension, declination, fpmax, fapmax, pnum, save)
+		SaveResults(CW, rascension, declination, fpmax, fapmax, pnum, save, timestamp)
 		print(fpmax)
 		print(fapmax)
 
@@ -250,7 +257,7 @@ if __name__ == '__main__':
 		"""
 
 		if (threshold - fapmax) < accuracy and fapmax < threshold:
-			SaveResults(CW, rascension, declination, fpmin, fapmin, pnum, save)
+			SaveResults(CW, rascension, declination, fpmin, fapmin, pnum, save, timestamp)
         
 		elif fapmax < threshold and fapmin > threshold:
 			print('hmin and hmax range is ok')
@@ -267,7 +274,7 @@ if __name__ == '__main__':
 				faparray[i] = faptemp
 			fpmid = np.average(fparray)
 			fapmid = np.average(faparray)
-			SaveResults(CW, rascension, declination, fpmid, fapmid, pnum, save)
+			SaveResults(CW, rascension, declination, fpmid, fapmid, pnum, save, timestamp)
 			print(fpmid)
 			print(fapmid)
 	
@@ -290,7 +297,7 @@ if __name__ == '__main__':
 					faparray[i] = faptemp
 				fpmid = np.average(fparray)
 				fapmid = np.average(faparray)
-				SaveResults(CW, rascension, declination, fpmid, fapmid, pnum, save)
+				SaveResults(CW, rascension, declination, fpmid, fapmid, pnum, save, timestamp)
 				print(f'Count: {count}')
 				print(fpmid)
 				print(fapmid)
