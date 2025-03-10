@@ -14,7 +14,7 @@ import random
 
 import enterprise
 import psutil, os
-from pympler.tracker import SummaryTracker
+#from pympler.tracker import SummaryTracker
 
 from fastfp.fastfp import FastFp
 from fastfp.utils import initialize_pta, get_mats_fp
