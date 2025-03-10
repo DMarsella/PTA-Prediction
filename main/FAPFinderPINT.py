@@ -16,8 +16,8 @@ import enterprise
 import psutil, os
 from pympler.tracker import SummaryTracker
 
-from fastfp.fastfp import Fp_jax
-from fastfp.utils import initialize_pta, get_mats
+from fastfp.fastfp import FastFp
+from fastfp.utils import initialize_pta, get_mats_fp
 
 #@profile
 def FPCalc(psrs, noise, freqs):
@@ -37,7 +37,7 @@ def FPCalc(psrs, noise, freqs):
 
 	print('Precompute matrix wall.')
 	t_start = time.perf_counter()
-	Nvecs, Ts, sigmainvs = get_mats(pta, noise)
+	Nvecs, Ts, sigmainvs = get_mats_fp(pta, noise)
 	t_end = time.perf_counter()
 	print('Precompute matrix wall time: {0:.4f} s'.format(t_end - t_start))
     
@@ -46,7 +46,7 @@ def FPCalc(psrs, noise, freqs):
 	#print(f'FPCalc Function, Matrix Wall: {fp_memory - fp_memory_base}')
 
 	print('initialize Fp-stat class')
-	Fp_obj = Fp_jax(psrs, pta)
+	Fp_obj = FastFp(psrs, pta)
     
 	#memory tracking
 	#fp_memory = fp_process.memory_info().rss
