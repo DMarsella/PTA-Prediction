@@ -308,7 +308,7 @@ def generate_daily_avg_toas(psr, secperday):
 
     return toas2
 
-def DailyAvgPop(datadir):
+def DailyAvgPop(datadir, timeline):
     secperday = 24*3600
 
     old_parfiles = sorted(glob.glob(datadir + 'par/*.par'))
@@ -328,7 +328,7 @@ def DailyAvgPop(datadir):
         newobslist = []
 
         for f in list(np.unique(psr.toas['f'])):
-            newobslist.append({'f': f, 'start': None, 'end': 60000, 'cadence': 20})
+            newobslist.append({'f': f, 'start': None, 'end': timeline, 'cadence': 20})
 
         print(newobslist)
             

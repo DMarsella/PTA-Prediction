@@ -113,13 +113,13 @@ def FAP(primpuls, CW, noise):
 	return psrs, fp, fap
 
 #@profile
-def SaveResults(CW, ras, dec, fp, fap, pnum, save, timestamp):
+def SaveResults(CW, ras, dec, fp, fap, pnum, save):
 	fgw = (10**(CW[3]+9))
 	#filename = f'R{rascension}_D{declination}_h{Decimal(CW[4]):.4}_f{Decimal(fgw):.4}_p{pnum}'
 	#with open(save + filename + '.pkl', 'wb') as f:
 	#	pickle.dump(psrs, f)
 
-	with open(save + timestamp + 'FAP_Data.txt', 'a') as g:
+	with open(save + 'FAP_Data.txt', 'a') as g:
 		parameters = [ras, dec, CW, fp, fap, pnum]
 		g.write(str(parameters)+'\n')
         
@@ -143,8 +143,9 @@ if __name__ == '__main__':
 	parser.add_argument('--fgw', help='GW Frequency, in Hz.', type=float, default=2e-9)
 	parser.add_argument('--threshold', help='The FAP value you are looking to find. Defaults to .05.', type=float, default=.05)
 	parser.add_argument('--accuracy', help='How accurate an answer. Defaults to .001 difference from threshold.', type=int, default=.01)
-	parser.add_argument('-af', '--avgfactor', help='How many repetitions to run and average for each value.', type=int, default=10)
+	parser.add_argument('-rpt', '--repeat', help='How many repetitions to run and average for each value.', type=int, default=10)
 	parser.add_argument('--ptafile', help='If undefined, will create a pta using par and tim files. Can be defined to use an existing pickle file pta.', default=None)
+	parser.add_argument('--timeline', help='Define the end date for generated observations.',type=float, default=60000)
 
 	args = parser.parse_args()
 
@@ -156,9 +157,10 @@ if __name__ == '__main__':
 	pnum = args.pnumber
 	with open(data + 'RedNoiseLibrary.json', 'r') as f:
 		noise = json.load(f)
-	avgfactor = args.avgfactor
+	repeat = args.repeat
 	ptafile = args.ptafile
 	timestamp = str(datetime.datetime.now().timestamp()).split('.')[0]
+	timeline = args.timeline
 
 	#Continuous Wave Parameters
 	cos_i = np.cos(args.inclination)
@@ -176,7 +178,7 @@ if __name__ == '__main__':
 
 	#Populate list of pulsars
 	if ptafile == None:
-		temp = utility.DailyAvgPop(data)
+		temp = utility.DailyAvgPop(data, timeline)
 
 		primpuls = []
 		for psr in temp:
@@ -197,25 +199,18 @@ if __name__ == '__main__':
 	memory_base = process.memory_info().rss
 	"""
 
-	random.seed()
-	fparray = np.zeros(avgfactor)
-	faparray = np.zeros(avgfactor)
+	
 	#Check hmin and hmax before entering the loop.
-	for i in range(avgfactor):
+	
+	random.seed()
+	for i in range(repeat):
 		phase0 = 2*np.pi*random.random()
 		CW = [cos_i, cos_theta, Mc, fglog10, hmin, phase0, phi, psi]
-		_, fptemp, faptemp = FAP(primpuls, CW, noise)
-		print(f'fptemp is {fptemp}')
-		print(f'faptemp is {faptemp}')
-		fparray[i] = fptemp[0]
-		faparray[i] = faptemp
-	fpmin = np.average(fparray)
-	fapmin = np.average(faparray)
-	print(fparray)
-	print(faparray)
-	SaveResults(CW, rascension, declination, fpmin, fapmin, pnum, save, timestamp)
-	print(f'fpmin is type {type(fpmin)} and {fpmin}')
-	print(f'fapmin is type {type(fpmin)} and {fapmin}')
+		_, fpmin, fapmin = FAP(primpuls, CW, noise)
+		print(f'fpmin is {fpmin}')
+		print(f'fapmin is {fapmin}')
+		print(i)
+		SaveResults(CW, rascension, declination, fpmin, fapmin, pnum, save)
 	#print(f'psrs is {type(psrs)}')
 
 	"""
@@ -233,20 +228,15 @@ if __name__ == '__main__':
     
 	else:
 		print('hmin was outside of bounds, checking hmax')
-		for i in range(avgfactor):
+		for i in range(repeat):
 			phase0 = 2*np.pi*random.random()
 			CW[4] = hmax
 			CW[5] = phase0
-			_, fptemp, faptemp = FAP(primpuls, CW, noise)
-			print(f'fptemp is {fptemp}')
-			print(f'faptemp is {faptemp}')
-			fparray[i] = fptemp[0]
-			faparray[i] = faptemp
-		fpmax = np.average(fparray)
-		fapmax = np.average(faparray)
-		SaveResults(CW, rascension, declination, fpmax, fapmax, pnum, save, timestamp)
-		print(fpmax)
-		print(fapmax)
+			_, fpmax, fapmax = FAP(primpuls, CW, noise)
+			print(f'fpmax is {fpmax}')
+			print(f'fapmax is {fapmax}')
+			print(i)
+			SaveResults(CW, rascension, declination, fpmax, fapmax, pnum, save)
 
 		"""
 		#DEBUG: Memory tracking
@@ -257,26 +247,22 @@ if __name__ == '__main__':
 		"""
 
 		if (threshold - fapmax) < accuracy and fapmax < threshold:
-			SaveResults(CW, rascension, declination, fpmin, fapmin, pnum, save, timestamp)
+			print('Stopping at fapmax')
+			#SaveResults(CW, rascension, declination, fpmin, fapmin, pnum, save)
         
 		elif fapmax < threshold and fapmin > threshold:
 			print('hmin and hmax range is ok')
 			count = 0
 			hmid = (hmin+hmax)/2
-			for i in range(avgfactor):
+			for i in range(repeat):
 				phase0 = 2*np.pi*random.random()
 				CW[4] = hmid
 				CW[5] = phase0
-				_, fptemp, faptemp = FAP(primpuls, CW, noise)
-				print(f'fptemp is {fptemp}')
-				print(f'faptemp is {faptemp}')
-				fparray[i] = fptemp[0]
-				faparray[i] = faptemp
-			fpmid = np.average(fparray)
-			fapmid = np.average(faparray)
-			SaveResults(CW, rascension, declination, fpmid, fapmid, pnum, save, timestamp)
-			print(fpmid)
-			print(fapmid)
+				_, fpmid, fapmid = FAP(primpuls, CW, noise)
+				print(f'fpmid is {fpmid}')
+				print(f'fapmid is {fapmid}')
+				print(i)
+				SaveResults(CW, rascension, declination, fpmid, fapmid, pnum, save, timestamp)
 	
 			if (fapmid - threshold) > accuracy:
 				hmin = hmid
@@ -286,21 +272,16 @@ if __name__ == '__main__':
 			while ((fapmid - threshold) > accuracy) or ((threshold - fapmid) > accuracy):               
 				count += 1
 				hmid = (hmin+hmax)/2
-				for i in range(avgfactor):
+				for i in range(repeat):
 					phase0 = 2*np.pi*random.random()
 					CW[4] = hmid
 					CW[5] = phase0
 					_, fptemp, faptemp = FAP(primpuls, CW, noise)
-					print(f'fptemp is {fptemp}')
-					print(f'faptemp is {faptemp}')
-					fparray[i] = fptemp[0]
-					faparray[i] = faptemp
-				fpmid = np.average(fparray)
-				fapmid = np.average(faparray)
-				SaveResults(CW, rascension, declination, fpmid, fapmid, pnum, save, timestamp)
+					print(f'fpmid is {fpmid}')
+					print(f'fapmid is {fapmid}')
+					print(i)
+					SaveResults(CW, rascension, declination, fpmid, fapmid, pnum, save, timestamp)
 				print(f'Count: {count}')
-				print(fpmid)
-				print(fapmid)
 
 				"""
 				#DEBUG: Memory Tracking
