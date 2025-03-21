@@ -18,8 +18,9 @@ pint.logging.setup(sink=sys.stderr, level="WARNING", usecolors=True)
 import pta_replicator
 from pta_replicator import simulate
 from pta_replicator import white_noise
-from h5pulsar.pulsar import Pulsar, FilePulsar
+#from h5pulsar.pulsar import Pulsar, FilePulsar
 
+'''
 def hdf5_pop(filepath, num):
 
     """
@@ -64,6 +65,7 @@ def hdf5_pop(filepath, num):
     print('Returned {0} pulsars'.format(len(psrs)))
         
     return psrs
+'''
 
 def make_residual_plot(psr, save=False, simdir='pint_sims1/'):
     
