@@ -1,6 +1,6 @@
 #Ignore Data Folders
 Data/
-__pycache__/
+*/__pycache__/*
 
 #Ignore specific files
 *-checkpoint.py
