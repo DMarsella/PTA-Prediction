@@ -115,11 +115,12 @@ def FAP(primpuls, CW, noise):
 #@profile
 def SaveResults(CW, ras, dec, fp, fap, pnum, save):
 	fgw = (10**(CW[3]+9))
-	#filename = f'R{rascension}_D{declination}_h{Decimal(CW[4]):.4}_f{Decimal(fgw):.4}_p{pnum}'
+	filename = f'R{rascension}_D{declination}_f{Decimal(fgw):.4}_p{pnum}'
+
 	#with open(save + filename + '.pkl', 'wb') as f:
 	#	pickle.dump(psrs, f)
 
-	with open(save + 'FAP_Data.txt', 'a') as g:
+	with open(save + filename + 'FAP_Data.txt', 'a') as g:
 		parameters = [ras, dec, CW, fp, fap, pnum]
 		g.write(str(parameters)+'\n')
         
@@ -190,6 +191,8 @@ if __name__ == '__main__':
 	else:
 		with open(ptafile, mode='rb') as pkl:
 			primpuls = pickle.load(pkl)
+
+	pnum = len(primpuls)
 
 	"""
 	#DEBUG: Track Memory usage
@@ -262,7 +265,7 @@ if __name__ == '__main__':
 				print(f'fpmid is {fpmid}')
 				print(f'fapmid is {fapmid}')
 				print(i)
-				SaveResults(CW, rascension, declination, fpmid, fapmid, pnum, save, timestamp)
+				SaveResults(CW, rascension, declination, fpmid, fapmid, pnum, save)
 	
 			if (fapmid - threshold) > accuracy:
 				hmin = hmid
@@ -280,7 +283,7 @@ if __name__ == '__main__':
 					print(f'fpmid is {fpmid}')
 					print(f'fapmid is {fapmid}')
 					print(i)
-					SaveResults(CW, rascension, declination, fpmid, fapmid, pnum, save, timestamp)
+					SaveResults(CW, rascension, declination, fpmid, fapmid, pnum, save)
 				print(f'Count: {count}')
 
 				"""
