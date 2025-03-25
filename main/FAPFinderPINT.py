@@ -279,7 +279,7 @@ if __name__ == '__main__':
 					phase0 = 2*np.pi*random.random()
 					CW[4] = hmid
 					CW[5] = phase0
-					_, fptemp, faptemp = FAP(primpuls, CW, noise)
+					_, fpmid, fapmid = FAP(primpuls, CW, noise)
 					print(f'fpmid is {fpmid}')
 					print(f'fapmid is {fapmid}')
 					print(i)
