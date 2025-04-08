@@ -115,7 +115,7 @@ def FAP(primpuls, CW, noise):
 #@profile
 def SaveResults(CW, ras, dec, fp, fap, pnum, save):
 	fgw = (10**(CW[3]+9))
-	filename = f'R{rascension}_D{declination}_f{Decimal(fgw):.4}_p{pnum}'
+	filename = f'R{rascension}_D{declination}_f{Decimal(fgw):.4}_p{len(primpuls)}'
 
 	#with open(save + filename + '.pkl', 'wb') as f:
 	#	pickle.dump(psrs, f)
@@ -124,13 +124,110 @@ def SaveResults(CW, ras, dec, fp, fap, pnum, save):
 		parameters = [ras, dec, CW, fp, fap, pnum]
 		g.write(str(parameters)+'\n')
         
+def Bisection(primpuls, CW, hmin, hmax, threshold, noise):
+
+	#Check hmin and hmax before entering the loop.
+	accuracy = threshold/10
+	random.seed()
+	phase0 = 2*np.pi*random.random()
+	CW[4] = hmin
+	CW[5] = phase0
+	_, fpmin, fapmin = FAP(primpuls, CW, noise)
+	print(f'fpmin is {fpmin}')
+	print(f'fapmin is {fapmin}')
+	print(i)
+	SaveResults(CW, rascension, declination, fpmin, fapmin, len(primpuls), save)
+
+	if abs(fapmin - threshold) < accuracy and fapmin > threshold - accuracy:
+		print('hmin fell within tolerance.')
+		#SaveResults(CW, rascension, declination, fpmax, fapmax, len(primpuls), save)
+
+	else:
+		print('hmin was outside of bounds, checking hmax')
+		phase0 = 2*np.pi*random.random()
+		CW[4] = hmax
+		CW[5] = phase0
+		_, fpmax, fapmax = FAP(primpuls, CW, noise)
+		print(f'fpmax is {fpmax}')
+		print(f'fapmax is {fapmax}')
+		print(i)
+		SaveResults(CW, rascension, declination, fpmax, fapmax, len(primpuls), save)
+
+		if abs(threshold - fapmax) < accuracy and fapmax < threshold + accuracy:
+			print('Stopping at fapmax')
+			#SaveResults(CW, rascension, declination, fpmin, fapmin, len(primpuls), save)
+        
+		elif fapmax < threshold and fapmin > threshold:
+			print('hmin and hmax range is ok')
+			count = 0
+			hmid = (hmin+hmax)/2
+			phase0 = 2*np.pi*random.random()
+			CW[4] = hmid
+			CW[5] = phase0
+			_, fpmid, fapmid = FAP(primpuls, CW, noise)
+			print(f'fpmid is {fpmid}')
+			print(f'fapmid is {fapmid}')
+			print(i)
+			SaveResults(CW, rascension, declination, fpmid, fapmid, len(primpuls), save)
+	
+			if (fapmid - threshold) > accuracy:
+				hmin = hmid
+			elif (threshold - fapmid) > accuracy:
+				hmax = hmid
+            
+			while ((fapmid - threshold) > accuracy) or ((threshold - fapmid) > accuracy):               
+				count += 1
+				hmid = (hmin+hmax)/2
+				phase0 = 2*np.pi*random.random()
+				CW[4] = hmid
+				CW[5] = phase0
+				_, fpmid, fapmid = FAP(primpuls, CW, noise)
+				print(f'fpmid is {fpmid}')
+				print(f'fapmid is {fapmid}')
+				print(i)
+				SaveResults(CW, rascension, declination, fpmid, fapmid, len(primpuls), save)
+				print(f'Count: {count}')
+
+				"""
+				#DEBUG: Memory Tracking
+				memory = process.memory_info().rss
+				print(f'Bisecting count: {count} is using {(memory - memory_base)*1e-9}GB RAM after simulation')
+				tracker.print_diff()
+				"""
+    
+				if (fapmid - threshold) > accuracy:
+					hmin = hmid
+				elif (threshold - fapmid) > accuracy:
+					hmax = hmid
+                
+			print('Task Complete')
+			#SaveResults(CW, rascension, declination, fpmid, fapmid, len(primpuls), save)
+
+		else:
+			print('There was an error.')
+
+	return None
+
+def Grid(primpuls, CW, hmin, hmax, noise):
+	range = np.linspace(hmin, hmax, 10)
+	for i in range:
+		phase0 = 2*np.pi*random.random()
+		CW[4] = i
+		CW[5] = phase0
+		_, fp, fap = FAP(primpuls, CW, noise)
+		print(f'fp is {fp}')
+		print(f'fap is {fap}')
+		print(i)
+		SaveResults(CW, rascension, declination, fp, fap, len(primpuls), save)
+
+
 if __name__ == '__main__':
 
 	import argparse
 
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument('-n', '--pnumber', help='How many pulsars to simulate? Will select for longest observation period from data.', type=int, default=14)
+	parser.add_argument('-n', '--len(primpuls)ber', help='How many pulsars to simulate? Will select for longest observation period from data.', type=int, default=14)
 	parser.add_argument('-s', '--save', help='Where do you want the data? Defaults to CWD/Data/Sims', default=(str(Path.cwd()) + '/Data/Sims/'))
 	parser.add_argument('-d', '--data', help='Where is the data located? Defaults to CWD/Data', default=(str(Path.cwd()) + '/Data/'))
 	parser.add_argument('-i', '--inclination', help='Source Inclination in radians.', type=float, default=0)
@@ -142,26 +239,25 @@ if __name__ == '__main__':
 	parser.add_argument('--rascension', help='Right Ascension of source, in hours.', type=float, default=18)
 	parser.add_argument('--declination', help='Declination of source, in degrees.', type=float, default=-15)
 	parser.add_argument('--fgw', help='GW Frequency, in Hz.', type=float, default=2e-9)
-	parser.add_argument('--threshold', help='The FAP value you are looking to find. Defaults to .05.', type=float, default=.05)
-	parser.add_argument('--accuracy', help='How accurate an answer. Defaults to .001 difference from threshold.', type=int, default=.01)
-	parser.add_argument('-rpt', '--repeat', help='How many repetitions to run and average for each value.', type=int, default=10)
+	parser.add_argument('--threshold', help='The FAP value you are looking to find. Defaults to .001.', type=float, default=.001)
+	parser.add_argument('-rpt', '--repeat', help='How many repetitions to run.', type=int, default=10)
 	parser.add_argument('--ptafile', help='If undefined, will create a pta using par and tim files. Can be defined to use an existing pickle file pta.', default=None)
 	parser.add_argument('--timeline', help='Define the end date for generated observations.',type=float, default=60000)
+	parser.add_argument('--searchtype', help='Bisection or Grid search', default='Bisection')
 
 	args = parser.parse_args()
 
 	#General Variables and File Information
 	threshold = args.threshold
-	accuracy = args.accuracy
 	save = args.save
 	data = args.data
-	pnum = args.pnumber
 	with open(data + 'RedNoiseLibrary.json', 'r') as f:
 		noise = json.load(f)
 	repeat = args.repeat
 	ptafile = args.ptafile
 	timestamp = str(datetime.datetime.now().timestamp()).split('.')[0]
 	timeline = args.timeline
+	searchtype = args.searchtype
 
 	#Continuous Wave Parameters
 	cos_i = np.cos(args.inclination)
@@ -176,6 +272,8 @@ if __name__ == '__main__':
 	fglog10 = np.log10(fgwraw)
 	fgw=np.linspace(fgwraw, fgwraw, 1)
 	phi = rascension/24*360
+	phase0 = 1
+	CW = [cos_i, cos_theta, Mc, fglog10, hmin, phase0, phi, psi]
 
 	#Populate list of pulsars
 	if ptafile == None:
@@ -192,121 +290,13 @@ if __name__ == '__main__':
 		with open(ptafile, mode='rb') as pkl:
 			primpuls = pickle.load(pkl)
 
-	pnum = len(primpuls)
-
-	"""
-	#DEBUG: Track Memory usage
-	tracker = SummaryTracker()
-	tracker.print_diff()
-	process = psutil.Process(os.getpid())
-	memory_base = process.memory_info().rss
-	"""
-
-	
-	#Check hmin and hmax before entering the loop.
-	
-	random.seed()
-	for i in range(repeat):
-		phase0 = 2*np.pi*random.random()
-		CW = [cos_i, cos_theta, Mc, fglog10, hmin, phase0, phi, psi]
-		_, fpmin, fapmin = FAP(primpuls, CW, noise)
-		print(f'fpmin is {fpmin}')
-		print(f'fapmin is {fapmin}')
-		print(i)
-		SaveResults(CW, rascension, declination, fpmin, fapmin, pnum, save)
-	#print(f'psrs is {type(psrs)}')
-
-	"""
-	#DEBUG:Memory tracking
-	memory = process.memory_info().rss
-	print(f'Using {(memory - memory_base)*1e-9}GB RAM after hmin test.')
-	tracker.print_diff()
-	#SaveResults(psrs, CW, rascension, declination, fpmin, fapmin, pnum, save + 'Test/')
-	"""
-
-	if (fapmin - threshold) < accuracy and fapmin > threshold:
-		print('hmin fell within tolerance.')
-		#SaveResults(CW, rascension, declination, fpmax, fapmax, pnum, save)
-
-    
-	else:
-		print('hmin was outside of bounds, checking hmax')
+	if searchtype == 'Grid':
 		for i in range(repeat):
-			phase0 = 2*np.pi*random.random()
-			CW[4] = hmax
-			CW[5] = phase0
-			_, fpmax, fapmax = FAP(primpuls, CW, noise)
-			print(f'fpmax is {fpmax}')
-			print(f'fapmax is {fapmax}')
-			print(i)
-			SaveResults(CW, rascension, declination, fpmax, fapmax, pnum, save)
+			Grid(primpuls, CW, hmin, hmax, noise)
 
-		"""
-		#DEBUG: Memory tracking
-		memory = process.memory_info().rss
-		print(f'Using {(memory - memory_base)*1e-9}GB RAM after hmax test.')
-		tracker.print_diff()
-		#SaveResults(psrs, CW, rascension, declination, fpmax, fapmax, pnum, save + 'Test/')
-		"""
+	elif searchtype == 'Bisection':
+		for i in range(repeat):
+			Bisection(primpuls, CW, hmin, hmax, threshold, noise)
 
-		if (threshold - fapmax) < accuracy and fapmax < threshold:
-			print('Stopping at fapmax')
-			#SaveResults(CW, rascension, declination, fpmin, fapmin, pnum, save)
-        
-		elif fapmax < threshold and fapmin > threshold:
-			print('hmin and hmax range is ok')
-			count = 0
-			hmid = (hmin+hmax)/2
-			for i in range(repeat):
-				phase0 = 2*np.pi*random.random()
-				CW[4] = hmid
-				CW[5] = phase0
-				_, fpmid, fapmid = FAP(primpuls, CW, noise)
-				print(f'fpmid is {fpmid}')
-				print(f'fapmid is {fapmid}')
-				print(i)
-				SaveResults(CW, rascension, declination, fpmid, fapmid, pnum, save)
-	
-			if (fapmid - threshold) > accuracy:
-				hmin = hmid
-			elif (threshold - fapmid) > accuracy:
-				hmax = hmid
-            
-			while ((fapmid - threshold) > accuracy) or ((threshold - fapmid) > accuracy):               
-				count += 1
-				hmid = (hmin+hmax)/2
-				for i in range(repeat):
-					phase0 = 2*np.pi*random.random()
-					CW[4] = hmid
-					CW[5] = phase0
-					_, fpmid, fapmid = FAP(primpuls, CW, noise)
-					print(f'fpmid is {fpmid}')
-					print(f'fapmid is {fapmid}')
-					print(i)
-					SaveResults(CW, rascension, declination, fpmid, fapmid, pnum, save)
-				print(f'Count: {count}')
-
-				"""
-				#DEBUG: Memory Tracking
-				memory = process.memory_info().rss
-				print(f'Bisecting count: {count} is using {(memory - memory_base)*1e-9}GB RAM after simulation')
-				tracker.print_diff()
-				"""
-    
-				if (fapmid - threshold) > accuracy:
-					hmin = hmid
-				elif (threshold - fapmid) > accuracy:
-					hmax = hmid
-                
-			print('Task Complete')
-			#SaveResults(CW, rascension, declination, fpmid, fapmid, pnum, save)
-
-		else:
-			print('There was an error.')
-
-    
-
-
-
-    
-
+	else:
+		print('searchtype must be either Grid or Bisection')
