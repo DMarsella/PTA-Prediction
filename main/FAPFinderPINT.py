@@ -175,7 +175,7 @@ def Bisection(primpuls, CW, hmin, hmax, threshold, noise):
 			elif (threshold - fapmid) > accuracy:
 				hmax = hmid
             
-			while ((fapmid - threshold) > accuracy) or ((threshold - fapmid) > accuracy):               
+			while (((fapmid - threshold) > accuracy) or ((threshold - fapmid) > accuracy)) and count < 10:               
 				count += 1
 				hmid = (hmin+hmax)/2
 				phase0 = 2*np.pi*random.random()
