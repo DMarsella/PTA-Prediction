@@ -2,6 +2,20 @@ FAPFinder simulates pulsars using raw pulsar data and calculates the FP and FAP 
 
 FAPFinderPINT.py is the primary run file.
 
+Dependancies:
+numpy
+pathlib
+time
+json
+pickle
+decimal
+datetime
+jax
+scipy
+random
+enterprise
+fastfp
+
 Command Line Arguments:
 
     "-s",
@@ -90,5 +104,10 @@ Where CW is a list of the Continuous Wave parameters:
 [cosine of Inclination, cos of Theta (source location), Chirp Mass, Log of wave frequency, strain h, Initial Phase, phi (source location), psi]
 
 The \n is for human readability and for separating the entries in code.
+
+Credit:
+
+This code was organized and assembled by David Marsella. The time averaged and statistical generation of pulsars was written by Sarah J. Vigeland. FastFP is made by Gabe Freedman.
+
 
 

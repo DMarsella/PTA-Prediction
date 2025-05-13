@@ -65,7 +65,7 @@ def FAPCalc(N, fp0):
     param: fp0: Fp statistic
 
     return: fap: False Alarm Probability
-    
+
     Uses the Fp statistic to calculate the False Alarm Probability'''
 
     n = np.arange(0, N)
@@ -412,7 +412,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--searchtype", help="Bisection or Grid search", default="Bisection"
-    )
+    )"
 
     args = parser.parse_args()
 
