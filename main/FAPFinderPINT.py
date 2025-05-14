@@ -130,7 +130,7 @@ def SaveResults(CW, ras, dec, fp, fap, pnum, save, searchtype):
             g.write(str(parameters) + "\n")
 
     # Bisection search sends the threshold value for searchtype
-    # Each data entry will be labeled 'Bisect' and include the threshold value       
+    # Each data entry will be labeled 'Bisect' and include the threshold value
     else:
         with open(save + filename + "FAP_Data.txt", "a") as g:
             parameters = ['Bisect', searchtype, ras, dec, CW, fp[0], fap, pnum]
@@ -412,7 +412,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--searchtype", help="Bisection or Grid search", default="Bisection"
-    )"
+    )
 
     args = parser.parse_args()
 
